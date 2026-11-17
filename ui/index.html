@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cosmic Optimizer</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="stars" aria-hidden="true"></canvas>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+            <circle cx="16" cy="16" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <ellipse cx="16" cy="16" rx="13" ry="5" fill="none" stroke="currentColor" stroke-width="1" transform="rotate(-24 16 16)"/>
+            <circle cx="27" cy="9" r="1.4" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text"><span>COSMIC</span><small>OPTIMIZER</small></div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <button class="nav-item is-active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span>Обзор</span>
+        </button>
+        <button class="nav-item" data-view="registry">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg>
+          <span>Реестр</span>
+        </button>
+        <button class="nav-item" data-view="devices">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <span>Видеокарта</span>
+        </button>
+        <button class="nav-item" data-view="maintenance">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 1 0 3 3L21 6l-3-3-3.3 3.3z"/><path d="M12.5 9.5 4 18l2 2 8.5-8.5"/><path d="M6 4l1.5 1.5M4 6l1.5 1.5"/></svg>
+          <span>Обслуживание</span>
+        </button>
+        <button class="nav-item" data-view="benchmark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h17"/><path d="m7 15 4-5 3 2 5-7"/></svg>
+          <span>Бенчмарк</span>
+        </button>
+        <button class="nav-item" data-view="scripts">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5M8 13l2.5 2.5L8 18"/></svg>
+          <span>Мои скрипты</span>
+        </button>
+        <button class="nav-item" data-view="tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3l7 7-4 4-7-7z"/><path d="M10 7L3 14v7h7l7-7"/><circle cx="7.5" cy="17.5" r="1.2"/></svg>
+          <span>Инструменты</span>
+        </button>
+        <button class="nav-item" data-view="backups">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+          <span>Бэкапы</span>
+        </button>
+        <button class="nav-item" data-view="logs">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg>
+          <span>Логи</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          <span>Настройки</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <span id="side-version">v—</span>
+        <span class="dot"></span>
+        <span>локально</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="section-title">Обзор</h1>
+          <p id="section-sub" class="muted">Состояние системы и последние действия</p>
+        </div>
+        <div class="topbar-right">
+          <button class="search-trigger" id="btn-search" type="button" aria-label="Поиск по приложению">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+            <span>Поиск</span>
+            <kbd>Ctrl K</kbd>
+          </button>
+          <span id="admin-badge" class="badge badge-muted">Проверка прав…</span>
+        </div>
+      </header>
+
+      <div id="admin-banner" class="banner hidden">
+        <div>
+          <strong>Ограниченный режим.</strong>
+          <span>Нет прав администратора: твики HKLM, устройства и скрипты заблокированы.</span>
+        </div>
+        <button class="btn btn-light" id="btn-elevate">Перезапустить от администратора</button>
+      </div>
+
+      <div class="content" id="content">
+        <!-- Обзор -->
+        <section class="view is-active" id="view-dashboard">
+          <div class="monitor panel" id="monitor">
+            <div class="monitor-head">
+              <div>
+                <h2>Мониторинг в реальном времени</h2>
+                <p class="muted small" id="monitor-sub">Плавное обновление в реальном времени</p>
+              </div>
+              <div class="monitor-actions">
+                <span class="live-dot" id="monitor-live" aria-hidden="true"></span>
+                <button class="btn btn-ghost btn-sm" id="btn-monitor-toggle">Пауза</button>
+              </div>
+            </div>
+            <div class="monitor-body">
+              <div class="gauges">
+                <div class="gauge" data-metric="cpu">
+                  <div class="gauge-top"><span>Процессор</span><strong id="m-cpu">—</strong></div>
+                  <div class="meter"><span class="meter-fill" id="m-cpu-bar"></span></div>
+                  <div class="gauge-foot" id="m-cpu-note">—</div>
+                </div>
+                <div class="gauge" data-metric="ram">
+                  <div class="gauge-top"><span>Память</span><strong id="m-ram">—</strong></div>
+                  <div class="meter"><span class="meter-fill" id="m-ram-bar"></span></div>
+                  <div class="gauge-foot" id="m-ram-note">—</div>
+                </div>
+                <div class="gauge" data-metric="gpu">
+                  <div class="gauge-top"><span>Видеокарта</span><strong id="m-gpu">—</strong></div>
+                  <div class="meter"><span class="meter-fill" id="m-gpu-bar"></span></div>
+                  <div class="gauge-foot" id="m-gpu-note">—</div>
+                </div>
+                <div class="gauge" data-metric="temp">
+                  <div class="gauge-top"><span>Температура</span><strong id="m-temp">—</strong></div>
+                  <div class="meter meter-temp"><span class="meter-fill" id="m-temp-bar"></span></div>
+                  <div class="gauge-foot" id="m-temp-note">—</div>
+                </div>
+              </div>
+              <div class="monitor-chart">
+                <canvas id="metrics-chart" aria-label="График нагрузки"></canvas>
+                <div class="chart-legend">
+                  <span><i class="legend-line legend-cpu"></i>CPU</span>
+                  <span><i class="legend-line legend-ram"></i>RAM</span>
+                  <span class="muted" id="chart-scale">3 минуты</span>
+                </div>
+              </div>
+            </div>
+            <div class="monitor-stats">
+              <span>Процессов <strong id="m-proc">—</strong></span>
+              <span>ОЗУ <strong id="m-mem">—</strong></span>
+              <span>Работает <strong id="m-uptime">—</strong></span>
+              <span>GPU <strong id="m-gpu-name">—</strong></span>
+            </div>
+          </div>
+
+          <div class="grid grid-4" id="sys-cards"></div>
+
+          <div class="grid grid-2 mt">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Последний бэкап</h2>
+                <button class="btn btn-ghost" data-goto="backups">Все бэкапы</button>
+              </div>
+              <div id="last-backup" class="panel-body muted">Загрузка…</div>
+              <div class="panel-actions">
+                <button class="btn" id="btn-backup-now">Создать бэкап</button>
+                <button class="btn" data-restore-point>Точка восстановления</button>
+                <button class="btn" id="btn-undo">Откатить последнее</button>
+                <button class="btn btn-ghost" id="btn-open-logs">Открыть папку логов</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Журнал</h2>
+                <span class="muted small">последние 10 строк</span>
+              </div>
+              <pre class="log-mini" id="dash-log">Загрузка…</pre>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head">
+              <h2>Быстрый старт</h2>
+            </div>
+            <div class="panel-body quick">
+              <button class="quick-btn" data-goto="registry"><span>Реестр</span><small>25 проверенных твиков по категориям</small></button>
+              <button class="quick-btn" data-goto="devices"><span>Устройства</span><small>Включение и отключение видеокарт</small></button>
+              <button class="quick-btn" data-goto="scripts"><span>Мои скрипты</span><small>Power Scheme, bcdedit, DEP</small></button>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head"><h2>Что делает каждый раздел</h2></div>
+            <div class="panel-body feature-guide">
+              <button class="feature-guide-item" data-goto="dashboard"><strong>Обзор</strong><span>Показывает текущую загрузку CPU, памяти, графики и доступного датчика температуры. Это моментальный мониторинг, а не тест производительности.</span></button>
+              <button class="feature-guide-item" data-goto="registry"><strong>Реестр</strong><span>Включает отдельные параметры Windows. Перед изменением сохраняется прежнее значение; у каждого пункта указаны эффект, риск и откат.</span></button>
+              <button class="feature-guide-item" data-goto="devices"><strong>Видеокарта и устройства</strong><span>Позволяет включить или отключить найденное устройство. Отключение единственной видеокарты может погасить экран.</span></button>
+              <button class="feature-guide-item" data-goto="maintenance"><strong>Обслуживание</strong><span>Очищает выбранные временные данные, показывает состояние дисков, запускает проверки Windows и сравнивает замеры. Мастер помогает выбрать проверку по симптому.</span></button>
+              <button class="feature-guide-item" data-goto="scripts"><strong>Мои скрипты</strong><span>Показывает исходные BAT, CMD, REG и PowerShell-файлы. Запускайте только понятные вам команды; откат доступен лишь для отмеченных скриптов.</span></button>
+              <button class="feature-guide-item" data-goto="tools"><strong>Инструменты</strong><span>Содержит ссылки, загрузки и инструкции для сторонних программ. Перед запуском внешней утилиты проверьте её источник и назначение.</span></button>
+              <button class="feature-guide-item" data-goto="backups"><strong>Бэкапы</strong><span>Сохраняют доступные ключи реестра и состояние твиков. Это не полный образ Windows и не копия личных файлов.</span></button>
+              <button class="feature-guide-item" data-goto="logs"><strong>Логи</strong><span>Хранят локальную историю действий программы и технические сообщения для поиска ошибок.</span></button>
+              <button class="feature-guide-item" data-goto="settings"><strong>Настройки</strong><span>Управляют подтверждениями, автоматическим бэкапом и папкой хранения резервных копий.</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Реестр -->
+        <section class="view" id="view-registry">
+          <div class="toolbar">
+            <div class="chips" id="category-chips"></div>
+            <div class="toolbar-right">
+              <input type="search" id="tweak-search" class="input" placeholder="Поиск по названию или описанию…">
+            </div>
+          </div>
+          <div class="toolbar toolbar-sub">
+            <div class="muted small" id="tweak-stats">—</div>
+            <div class="toolbar-right">
+              <button class="btn btn-ghost btn-sm" id="btn-only-on" aria-pressed="false">Только включённые</button>
+              <button class="btn" id="btn-apply-category">Применить всё в категории</button>
+              <button class="btn btn-ghost" id="btn-revert-category">Откатить всё</button>
+            </div>
+          </div>
+          <div class="cards" id="tweak-list"></div>
+        </section>
+
+        <!-- Устройства -->
+        <section class="view" id="view-devices">
+          <div class="toolbar">
+            <div class="toolbar-right">
+              <button class="btn btn-ghost" id="btn-refresh-devices">Обновить</button>
+            </div>
+          </div>
+          <div class="banner banner-soft">
+            Список видеокарт Windows. Перед изменением сохраняется список устройств. Отключение видеокарты может погасить экран — если это единственная видеокарта, потребуется второй экран или удалённый доступ.
+          </div>
+          <div class="cards" id="device-list"></div>
+        </section>
+
+        <!-- Обслуживание -->
+        <section class="view" id="view-maintenance">
+          <div class="panel" id="troubleshooter">
+            <div class="panel-head">
+              <div>
+                <h2>Мастер диагностики</h2>
+                <p class="muted small">Выберите симптом — мастер выполнит только выбранные проверки и объяснит результат.</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="chips" id="diagnostic-symptoms" role="group" aria-label="Выберите проблему"></div>
+              <div class="diagnostic-content" id="diagnostic-content" aria-live="polite"></div>
+              <div class="diagnostic-result hidden" id="diagnostic-result" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head">
+              <h2>Очистка мусора</h2>
+              <div class="toolbar-right">
+                <button class="btn btn-ghost btn-sm" id="btn-scan-junk">Сканировать</button>
+                <button class="btn btn-sm" id="btn-clean-junk">Очистить выбранное</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="junk-list" id="junk-list"></div>
+              <div class="junk-total" id="junk-total">Нажмите «Сканировать», чтобы узнать размер</div>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head">
+              <h2>Диски и SMART</h2>
+              <div class="toolbar-right">
+                <button class="btn btn-ghost btn-sm" id="btn-refresh-disk">Обновить</button>
+                <button class="btn btn-sm" id="btn-trim">Выполнить TRIM</button>
+              </div>
+            </div>
+            <div class="panel-body" id="disk-list"></div>
+          </div>
+
+          <div class="panel mt" id="repair-panel">
+            <div class="panel-head">
+              <h2>Проверка целостности Windows</h2>
+              <div class="toolbar-right">
+                <button class="btn btn-sm" id="btn-sfc">sfc /scannow</button>
+                <button class="btn btn-ghost btn-sm" id="btn-dism">DISM RestoreHealth</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <p class="muted small" id="repair-hint">Проверка системных файлов и восстановление образа Windows. Занимает 10–25 минут, окно можно не закрывать.</p>
+              <div class="job-status hidden" id="repair-status">
+                <div class="job-head">
+                  <span class="mini-spinner" id="repair-spinner"></span>
+                  <strong id="repair-title">Выполняется…</strong>
+                  <span class="muted small" id="repair-elapsed"></span>
+                </div>
+                <pre class="log-mini tall" id="repair-output"></pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head">
+              <h2>Замер «до / после»</h2>
+              <button class="btn btn-sm" id="btn-measure">Сделать замер</button>
+            </div>
+            <div class="panel-body">
+              <p class="muted small">Снимает число процессов, занятую ОЗУ, время последней загрузки и автозапуск.
+                Сделайте замер, примените твики, перезагрузитесь и сделайте второй — увидите разницу.</p>
+              <div class="measure-list" id="measure-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Бенчмарк -->
+        <section class="view" id="view-benchmark">
+          <div class="panel">
+            <div class="panel-head"><h2>Тест накопителя Windows</h2><span class="badge badge-ok">до 60 секунд</span></div>
+            <div class="panel-body">
+              <p class="muted small">WinSAT выполняет четыре отдельных теста: последовательные и случайные чтение/запись. Используются фиксированные размеры операций и число запросов; пользовательские файлы не выбираются. Указанное время — общий предел теста (не более 60 секунд). Для сравнимых результатов закройте другие приложения, активно работающие с диском.</p>
+              <div class="benchmark-controls">
+                <label class="small">Диск <select class="input" id="benchmark-drive"></select></label>
+                <label class="small">Лимит времени <select class="input" id="benchmark-duration"><option value="10">до 10 секунд</option><option value="30" selected>до 30 секунд</option><option value="60">до 60 секунд</option></select></label>
+                <button class="btn" id="btn-start-benchmark">Запустить тест</button>
+              </div>
+              <div id="benchmark-result" class="benchmark-result hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Скрипты -->
+        <section class="view" id="view-scripts">
+          <div class="toolbar">
+            <div class="muted small">Папка <code>scripts/материалы/</code> — все .reg, .bat, .cmd и .ps1 из исходного набора. Ничего не запускается само.</div>
+            <div class="toolbar-right">
+              <input type="search" id="script-search" class="input" placeholder="Поиск по названию…">
+              <button class="btn btn-ghost" id="btn-open-scripts">Открыть папку</button>
+            </div>
+          </div>
+          <div class="script-groups" id="script-list"></div>
+          <div class="panel mt hidden" id="script-output-panel">
+            <div class="panel-head">
+              <h2>Вывод скрипта</h2>
+              <button class="btn btn-ghost btn-sm" id="btn-close-output">Скрыть</button>
+            </div>
+            <pre class="log-mini tall" id="script-output"></pre>
+          </div>
+        </section>
+
+        <!-- Инструменты -->
+        <section class="view" id="view-tools">
+          <div class="toolbar">
+            <div class="chips" id="tool-chips"></div>
+            <div class="toolbar-right">
+              <button class="btn btn-ghost" id="btn-open-downloads">Папка загрузок</button>
+              <button class="btn btn-ghost" id="btn-open-profiles">Профили</button>
+            </div>
+          </div>
+          <div class="panel mt" id="faceit-panel">
+            <div class="panel-head">
+              <h2>Если проблемы с FACEIT</h2>
+              <span class="badge badge-off" id="gpu-vendor">видеокарта: —</span>
+            </div>
+            <div class="panel-body">
+              <p class="muted small" style="margin:0 0 12px">
+                Античит FACEIT требует DEP и иногда Memory Integrity. Ниже — кнопки из исходного набора
+                и настройки, подобранные под вашу видеокарту.
+              </p>
+              <div class="cards" id="faceit-list"></div>
+            </div>
+          </div>
+          <div id="tool-groups"></div>
+        </section>
+
+        <!-- Бэкапы -->
+        <section class="view" id="view-backups">
+          <div class="toolbar">
+            <div class="muted small" id="backup-dir">—</div>
+            <div class="toolbar-right">
+              <button class="btn btn-ghost" id="btn-open-backups">Открыть папку</button>
+              <button class="btn btn-ghost" data-restore-point>Точка восстановления</button>
+              <button class="btn" id="btn-create-backup">Создать бэкап</button>
+            </div>
+          </div>
+          <div class="panel mt">
+            <div class="panel-head"><h2>Перенести настройки на другой компьютер</h2></div>
+            <div class="panel-body">
+              <p class="muted small profile-help">Экспортируйте состояние настроек каталога Cosmic Optimizer в один файл <code>.cosmicprofile</code> и отправьте его другу. При импорте приложение покажет, что включит и выключит, пропустит AMD/NVIDIA пункты для неподходящей видеокарты и сохранит бэкап компьютера перед изменениями. Скрипты, настройки вне каталога приложения и схема питания в профиль не входят.</p>
+              <div class="profile-actions">
+                <button class="btn" id="btn-export-profile">Экспортировать профиль</button>
+                <button class="btn btn-ghost" id="btn-import-profile">Выбрать профиль</button>
+                <button class="btn btn-ghost btn-sm" id="btn-reset-profile-restore-choice" title="Снова показывать вопрос перед импортом">Сбросить выбор точки</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel mt hidden" id="profile-import-preview">
+            <div class="panel-head">
+              <div><h2>Предпросмотр профиля</h2><p class="muted small" id="profile-preview-file"></p></div>
+              <button class="btn btn-ghost btn-sm" id="btn-cancel-profile">Закрыть</button>
+            </div>
+            <div class="panel-body">
+              <ol class="profile-steps" id="profile-import-steps" aria-label="Этапы импорта профиля">
+                <li data-profile-step="1"><span class="profile-step-number">1</span><span><strong>Выбрать</strong><small>Файл профиля</small></span></li>
+                <li data-profile-step="2"><span class="profile-step-number">2</span><span><strong>Сравнить</strong><small>Настройки и видеокарта</small></span></li>
+                <li data-profile-step="3"><span class="profile-step-number">3</span><span><strong>Применить</strong><small>После вашего подтверждения</small></span></li>
+              </ol>
+              <p class="profile-preview-intro muted small" id="profile-preview-intro">Точка показывает состояние на этом ПК сейчас: зелёная — включено, красная — выключено. Под названием указано, какое состояние задаст профиль.</p>
+              <div id="profile-preview-details" class="profile-preview-details"></div>
+              <div class="profile-actions mt-sm">
+                <button class="btn" id="btn-apply-profile">Создать бэкап и применить</button>
+              </div>
+            </div>
+          </div>
+          <div class="banner banner-soft">
+            Локальный полный бэкап сохраняет текущие ключи реестра Cosmic Optimizer на этом компьютере. Для передачи другу используйте переносимый профиль выше: обычные бэкапы содержат системные пути и не предназначены для импорта на другой ПК.
+          </div>
+          <div class="list" id="backup-list"></div>
+
+          <div class="panel mt">
+            <div class="panel-head">
+              <h2>Точки восстановления Windows</h2>
+              <button class="btn btn-ghost btn-sm" id="btn-refresh-points">Обновить</button>
+            </div>
+            <div class="list" id="restore-point-list" style="padding:14px"></div>
+          </div>
+        </section>
+
+        <!-- Логи -->
+        <section class="view" id="view-logs">
+          <div class="toolbar">
+            <div class="muted small" id="log-path">—</div>
+            <div class="toolbar-right">
+              <button class="btn btn-ghost" id="btn-refresh-logs">Обновить</button>
+              <button class="btn" id="btn-copy-logs">Скопировать</button>
+              <button class="btn btn-ghost" id="btn-export-logs">Экспорт</button>
+              <button class="btn btn-danger" id="btn-clear-logs">Очистить</button>
+            </div>
+          </div>
+          <pre class="log-full" id="log-view">Загрузка…</pre>
+        </section>
+
+        <!-- Настройки -->
+        <section class="view" id="view-settings">
+          <div class="panel">
+            <div class="panel-head"><h2>Поведение</h2></div>
+            <div class="panel-body settings-rows">
+              <label class="switch-row">
+                <span>
+                  <strong>Подтверждать опасные действия</strong>
+                  <small class="muted">Модальное окно перед каждым изменением реестра, скриптом и устройством</small>
+                </span>
+                <input type="checkbox" id="set-confirmations" class="switch">
+              </label>
+              <label class="switch-row">
+                <span>
+                  <strong>Автобэкап перед изменением</strong>
+                  <small class="muted">Экспорт ключа реестра перед каждым твиком (рекомендуется)</small>
+                </span>
+                <input type="checkbox" id="set-autobackup" class="switch">
+              </label>
+              <div class="switch-row">
+                <span>
+                  <strong>Папка бэкапов</strong>
+                  <small class="muted">Полный путь на диске</small>
+                </span>
+                <div class="row-inline">
+                  <input type="text" id="set-backup-dir" class="input input-path">
+                  <button class="btn btn-ghost" id="btn-save-dir">Сменить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel mt">
+            <div class="panel-head"><h2>Приложение</h2></div>
+            <div class="panel-body settings-rows">
+              <div class="switch-row">
+                <span><strong>Обучение</strong><small class="muted">Короткий тур по разделам приложения</small></span>
+                <button class="btn btn-ghost" id="btn-tour-again">Показать тур</button>
+              </div>
+              <div class="switch-row">
+                <span><strong>Версия</strong><small class="muted" id="about-version">—</small></span>
+                <button class="btn btn-ghost" id="btn-reset-settings">Сбросить настройки</button>
+              </div>
+              <div class="switch-row">
+                <span><strong>Данные</strong><small class="muted" id="about-data">—</small></span>
+                <button class="btn btn-ghost" id="btn-open-data">Открыть папку</button>
+              </div>
+              <div class="switch-row">
+                <span><strong>Выход</strong><small class="muted">Все изменения уже сохранены в реестре</small></span>
+                <button class="btn btn-danger" id="btn-quit">Закрыть приложение</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <div class="modal hidden" id="modal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title">Подтверждение</h2>
+      <p id="modal-text" class="muted"></p>
+      <label class="modal-remember hidden" id="profile-restore-remember"><input type="checkbox" id="profile-restore-remember-check"><span>Запомнить мой выбор и больше не спрашивать</span></label>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cancel">Отмена</button>
+        <button class="btn btn-ghost hidden" id="modal-skip">Пропустить точку</button>
+        <button class="btn btn-light" id="modal-ok">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading hidden" id="loading" role="status" aria-live="polite">
+    <div class="loading-card">
+      <div class="loading-head"><span class="spinner"></span><div><strong id="loading-text">Выполняется…</strong><small id="loading-elapsed">Подготовка…</small></div></div>
+      <div class="progress-track is-indeterminate" id="loading-track"><span class="progress-fill" id="loading-progress"></span></div>
+      <div class="loading-detail" id="loading-detail">Ожидание ответа от приложения</div>
+    </div>
+  </div>
+
+  <div class="job-progress hidden" id="job-progress" role="status" aria-live="polite">
+    <div class="job-progress-head">
+      <span class="job-progress-spinner" id="job-progress-spinner"></span>
+      <div class="job-progress-titles"><strong id="job-progress-title">Задача</strong><small id="job-progress-subtitle">Выполняется…</small></div>
+      <span class="job-progress-state" id="job-progress-state">В работе</span>
+    </div>
+    <div class="progress-track is-indeterminate" id="job-progress-track"><span class="progress-fill" id="job-progress-fill"></span></div>
+    <div class="job-progress-detail" id="job-progress-detail">Подготовка…</div>
+  </div>
+
+  <div class="search-overlay hidden" id="search-overlay">
+    <div class="search-box" role="dialog" aria-modal="true" aria-label="Поиск по приложению">
+      <div class="search-input-row">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+        <input id="search-input" type="text" placeholder="Твик, скрипт, инструмент…" autocomplete="off" spellcheck="false">
+        <button class="search-close" id="search-close" type="button" aria-label="Закрыть поиск">Esc</button>
+      </div>
+      <div class="search-results" id="search-results"></div>
+      <div class="search-foot muted small">↑ ↓ выбрать · Enter открыть · Ctrl+K закрыть</div>
+    </div>
+  </div>
+
+  <div class="tour hidden" id="tour">
+    <div class="tour-backdrop"></div>
+    <div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      <div class="tour-head">
+        <span class="tour-step" id="tour-step">1 / 4</span>
+        <button class="tour-skip" id="tour-skip" type="button">Пропустить</button>
+      </div>
+      <h3 id="tour-title">Заголовок</h3>
+      <p id="tour-text" class="muted">Текст</p>
+      <div class="tour-actions">
+        <button class="btn btn-ghost btn-sm" id="tour-prev">Назад</button>
+        <button class="btn btn-light btn-sm" id="tour-next">Далее</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="stars.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

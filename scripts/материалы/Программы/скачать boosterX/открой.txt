@@ -1,0 +1,5 @@
+https://boosterx.org/ru/
+и
+https://riptweaks.com/ru/
+и  в окно PowerShell : & ([scriptblock]::Create((irm "https://debloat.raphi.re/")))
+

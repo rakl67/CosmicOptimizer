@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+.idea/
+.vscode/
+
+build/
+dist/
+*.spec.bak
+
+ANALYSIS.md
+*.log
+*.tmp
+*.cosmicprofile
