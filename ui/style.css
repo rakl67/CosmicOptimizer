@@ -78,6 +78,47 @@ body { position: relative; }
 .brand-text span { font-size: 0.86rem; letter-spacing: 0.24em; font-weight: 600; }
 .brand-text small { font-size: 0.62rem; letter-spacing: 0.34em; color: var(--muted); }
 
+.startup-splash {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 48% 42% at 50% 43%, rgba(255,255,255,.075), transparent 72%),
+    #080a0c;
+  opacity: 1;
+  transition: opacity .72s ease, visibility .72s ease;
+}
+.startup-splash.is-leaving { visibility: hidden; opacity: 0; pointer-events: none; }
+.startup-splash-orbit {
+  position: absolute;
+  width: 310px;
+  height: 310px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 50%;
+  box-shadow: 0 0 0 38px rgba(255,255,255,.018), 0 0 0 78px rgba(255,255,255,.012);
+  animation: splash-orbit 8s linear infinite;
+}
+.startup-splash-logo { z-index: 1; width: 100px; height: 100px; filter: drop-shadow(0 0 25px rgba(255,255,255,.16)); animation: splash-mark 2.2s ease-in-out infinite; }
+.startup-splash-name { z-index: 1; margin-top: 20px; font-size: 1.42rem; font-weight: 650; letter-spacing: .28em; }
+.startup-splash-caption { z-index: 1; margin-top: 7px; color: var(--muted); font-size: .72rem; letter-spacing: .42em; }
+.startup-splash-progress { z-index: 1; width: 154px; height: 2px; margin-top: 28px; overflow: hidden; background: rgba(255,255,255,.11); }
+.startup-splash-progress span { display: block; width: 42%; height: 100%; background: #e8eaec; box-shadow: 0 0 12px rgba(255,255,255,.55); animation: splash-progress 1.5s ease-in-out infinite; }
+.startup-splash p { z-index: 1; margin: 12px 0 0; color: var(--faint); font-size: .75rem; letter-spacing: .02em; }
+.app { opacity: 0; transform: translateY(5px); transition: opacity .62s ease, transform .62s ease; }
+body.app-ready .app { opacity: 1; transform: none; }
+@keyframes splash-mark { 50% { transform: scale(1.045); filter: drop-shadow(0 0 34px rgba(255,255,255,.23)); } }
+@keyframes splash-progress { from { transform: translateX(-120%); } to { transform: translateX(360%); } }
+@keyframes splash-orbit { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .startup-splash-orbit, .startup-splash-logo, .startup-splash-progress span { animation: none; }
+  .startup-splash, .app { transition-duration: .01ms; }
+}
+
 .nav { display: flex; flex-direction: column; gap: 4px; }
 
 .nav-item {

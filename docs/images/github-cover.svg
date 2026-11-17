@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title description">
+  <title id="title">Cosmic Optimizer</title>
+  <desc id="description">Мониторинг, обслуживание и настройки Windows в одной программе.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#16191c"/>
+      <stop offset=".55" stop-color="#090b0d"/>
+      <stop offset="1" stop-color="#050607"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".22" cy=".5" r=".48">
+      <stop stop-color="#dce1e5" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#dce1e5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mark" x1=".18" y1=".12" x2=".84" y2=".92">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#899198"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="360" rx="28" fill="url(#background)"/>
+  <rect width="1200" height="360" rx="28" fill="url(#glow)"/>
+  <rect x="1" y="1" width="1198" height="358" rx="27" fill="none" stroke="#fff" stroke-opacity=".12"/>
+  <g fill="#fff" opacity=".38">
+    <circle cx="73" cy="62" r="1.5"/><circle cx="116" cy="286" r="1"/><circle cx="295" cy="43" r="1"/>
+    <circle cx="416" cy="317" r="1.4"/><circle cx="548" cy="78" r="1"/><circle cx="1118" cy="72" r="1.3"/>
+    <circle cx="1080" cy="284" r="1"/><circle cx="1007" cy="315" r="1.4"/>
+  </g>
+  <g transform="translate(228 180)" fill="none" stroke="url(#mark)" stroke-linecap="round">
+    <circle r="44" stroke-width="2.4"/>
+    <ellipse rx="122" ry="45" transform="rotate(-25)" stroke-width="2" opacity=".9"/>
+    <ellipse rx="122" ry="45" transform="rotate(25)" stroke-width="1" opacity=".28"/>
+    <circle cx="106" cy="-49" r="6" fill="#fff" stroke="none"/>
+  </g>
+  <path d="M470 72v216" stroke="#fff" stroke-opacity=".13"/>
+  <text x="530" y="148" fill="#f4f5f6" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="600" letter-spacing="1">Cosmic Optimizer</text>
+  <text x="534" y="194" fill="#adb3b8" font-family="Segoe UI, Arial, sans-serif" font-size="20">Понятные инструменты для Windows 10 и 11</text>
+  <g transform="translate(534 238)" fill="#d9dde0" font-family="Segoe UI, Arial, sans-serif" font-size="14" letter-spacing="1.2">
+    <text>МОНИТОРИНГ</text><circle cx="130" cy="-5" r="2" fill="#747b80"/>
+    <text x="150">ОБСЛУЖИВАНИЕ</text><circle cx="311" cy="-5" r="2" fill="#747b80"/>
+    <text x="331">НАСТРОЙКИ СИСТЕМЫ</text>
+  </g>
+  <rect x="530" y="275" width="192" height="42" rx="21" fill="#eef0f1"/>
+  <text x="626" y="302" text-anchor="middle" fill="#101214" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">Скачать для Windows</text>
+</svg>

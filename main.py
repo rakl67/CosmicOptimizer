@@ -729,10 +729,21 @@ def main() -> None:
             min_size=(1000, 700) if elevated else (480, 380),
             resizable=elevated,
             background_color="#050505",
+            focus=True,
+            on_top=True,
         )
     except Exception as exc:  # noqa: BLE001 - окно ещё не создано, показать диалог
         _fatal(f"Не удалось создать окно приложения:\n{exc}")
         return
+
+    def release_startup_topmost() -> None:
+        # Поднимаем окно над остальными при старте, но не оставляем его поверх игр и окон.
+        try:
+            window.on_top = False
+        except Exception:  # noqa: BLE001 - если GUI ещё не готов, обычное окно продолжит запуск
+            logger.debug("Не удалось снять временный режим поверх окон", exc_info=True)
+
+    window.events.shown += release_startup_topmost
 
     api.bind(window)
     if not elevated:

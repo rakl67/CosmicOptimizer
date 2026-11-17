@@ -2542,19 +2542,25 @@
   }
 
   async function boot() {
-    const info = await run("Подключение к backend…", () => api("get_system_info"));
-    if (info) {
-      state.admin = info.admin;
-      state.system = info;
-      renderAdmin(info.admin);
-      $("#side-version").textContent = `v${info.app_version}`;
-      const settings = await run("Настройки…", () => api("get_settings"));
-      if (settings) state.settings = settings;
-    }
-    loadDashboard();
-    startMonitor();
-    if (state.settings && !state.settings.onboarding_done) {
-      setTimeout(() => startTour(0), 700);
+    try {
+      const info = await run("Подключение к backend…", () => api("get_system_info"));
+      if (info) {
+        state.admin = info.admin;
+        state.system = info;
+        renderAdmin(info.admin);
+        $("#side-version").textContent = `v${info.app_version}`;
+        const settings = await run("Настройки…", () => api("get_settings"));
+        if (settings) state.settings = settings;
+      }
+      await loadDashboard();
+      startMonitor();
+      if (state.settings && !state.settings.onboarding_done) {
+        setTimeout(() => startTour(0), 700);
+      }
+    } finally {
+      document.body.classList.add("app-ready");
+      requestAnimationFrame(() => $("#startup-splash")?.classList.add("is-leaving"));
+      setTimeout(() => $("#startup-splash")?.remove(), 850);
     }
   }
 
