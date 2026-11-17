@@ -1,11 +1,19 @@
 <p align="center">
-  <img src="docs/images/github-cover.svg" alt="Cosmic Optimizer — мониторинг, обслуживание и настройки Windows" width="100%">
+  <img src="ui/brand.svg" alt="Значок Cosmic Optimization" width="112" height="112">
 </p>
+
+<h1 align="center">Cosmic Optimization</h1>
+
+<p align="center">Мониторинг, обслуживание и настройки Windows — в одном приложении.</p>
 
 <p align="center">
   <a href="https://github.com/rakl67/CosmicOptimizer/releases/latest/download/CosmicOptimizer.exe"><strong>Скачать для Windows</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/rakl67/CosmicOptimizer/releases">Все релизы</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/github-cover.svg" alt="Cosmic Optimizer для Windows" width="100%">
 </p>
 
 Cosmic Optimizer объединяет мониторинг компьютера, настройку Windows и обслуживание системы в одном окне.
