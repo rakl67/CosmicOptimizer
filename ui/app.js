@@ -24,11 +24,14 @@
     backups: [],
     settings: {},
     profilePreview: null,
+    telemetry: null,
   };
 
   const TITLES = {
-    dashboard: ["Обзор", "Состояние системы и последние действия"],
+    dashboard: ["Главная", "Состояние системы и последние действия"],
     registry: ["Реестр", "Проверенные настройки Windows по категориям"],
+    telemetry: ["Телеметрия", "Windows, Microsoft и браузеры в одном профиле"],
+    power: ["Электропитание", "Схемы электропитания Windows"],
     devices: ["Видеокарта и устройства", "Включение и отключение PnP-устройств"],
     maintenance: ["Обслуживание", "Очистка мусора, диски, проверки и замеры"],
     benchmark: ["Бенчмарк", "Короткий контролируемый тест накопителя"],
@@ -211,6 +214,14 @@
 
   /* ---------- навигация ---------- */
   function setView(view) {
+    if (view === "optimization") {
+      const submenu = document.getElementById("optimization-subnav");
+      const trigger = document.querySelector('[data-view="optimization"]');
+      const open = submenu.hidden;
+      submenu.hidden = !open;
+      trigger.setAttribute("aria-expanded", String(open));
+      return;
+    }
     if (!TITLES[view]) return;
     state.view = view;
     document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -219,6 +230,13 @@
     document.querySelectorAll(".view").forEach((node) => {
       node.classList.toggle("is-active", node.id === `view-${view}`);
     });
+    document.querySelectorAll(".nav-subitem").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.view === view));
+    const optimizationView = ["power", "telemetry", "registry", "scripts", "tools"].includes(view);
+    const submenu = document.getElementById("optimization-subnav");
+    const trigger = document.querySelector('[data-view="optimization"]');
+    submenu.hidden = !optimizationView;
+    trigger.setAttribute("aria-expanded", String(optimizationView));
+    trigger.classList.toggle("is-active", optimizationView);
     $("#section-title").textContent = TITLES[view][0];
     $("#section-sub").textContent = TITLES[view][1];
     $("#content").scrollTop = 0;
@@ -232,6 +250,8 @@
     const loaders = {
       dashboard: loadDashboard,
       registry: loadRegistry,
+      telemetry: loadTelemetry,
+      power: loadPower,
       devices: loadDevices,
       maintenance: loadMaintenance,
       benchmark: loadBenchmark,
@@ -244,8 +264,37 @@
     if (loaders[view]) loaders[view]();
   }
 
+  async function loadPower() {
+    const data = await run("Чтение схем электропитания…", () => api("power_schemes"));
+    if (!data) return;
+    const box = $("#power-schemes");
+    box.innerHTML = (data.schemes || []).map((scheme) => `
+      <article class="power-scheme ${scheme.active ? "is-active" : ""}">
+        <div class="power-scheme-copy"><strong>${esc(scheme.name)}</strong><small class="muted">${scheme.active ? "Используется сейчас" : scheme.builtin ? "Встроенная схема Windows" : "Пользовательская схема"}</small><code>${esc(scheme.guid)}</code></div>
+        <div class="power-scheme-actions">${scheme.active ? '<span class="badge badge-ok">Активна</span>' : `<button class="btn btn-ghost" data-power-activate="${esc(scheme.guid)}">Включить</button>`}${scheme.deletable ? `<button class="btn btn-danger" data-power-delete="${esc(scheme.guid)}">Удалить схему</button>` : ""}</div>
+      </article>`).join("") || '<p class="muted">Windows не вернула схем электропитания.</p>';
+  }
+  $("#btn-refresh-power").addEventListener("click", loadPower);
+  $("#power-schemes").addEventListener("click", async (event) => {
+    const activate = event.target.closest("[data-power-activate]");
+    const remove = event.target.closest("[data-power-delete]");
+    if (!activate && !remove) return;
+    const guid = (activate || remove).dataset.powerActivate || (activate || remove).dataset.powerDelete;
+    if (activate) {
+      const ok = await confirmAction("Включить схему?", "Windows переключится на выбранную схему электропитания.", "Включить");
+      if (!ok) return;
+      const result = await run("Переключение электропитания…", () => api("activate_power_scheme", guid));
+      if (result) { toast("Схема электропитания включена"); loadPower(); }
+    } else {
+      const ok = await confirmAction("Удалить пользовательскую схему?", "Схема будет удалена из Windows без возможности восстановления. Встроенные и активные схемы защищены.", "Удалить", true);
+      if (!ok) return;
+      const result = await run("Удаление схемы…", () => api("delete_power_scheme", guid));
+      if (result) { toast("Схема удалена"); loadPower(); }
+    }
+  });
+
   document.getElementById("nav").addEventListener("click", (e) => {
-    const btn = e.target.closest(".nav-item");
+    const btn = e.target.closest(".nav-item, .nav-subitem");
     if (btn) setView(btn.dataset.view);
   });
   document.addEventListener("click", (e) => {
@@ -289,15 +338,6 @@
         <div class="stat-sub">${data.tweaks_on ? esc((data.tweaks_on_names || []).slice(0, 3).join(", ")) + (data.tweaks_on > 3 ? ` и ещё ${data.tweaks_on - 3}` : "") : "Ни одна настройка не изменена"}</div>
       </div>`;
 
-    const last = data.last_backup;
-    $("#last-backup").innerHTML = last
-      ? `<div class="list-title">${esc(last.name)}</div>
-         <div class="list-sub">${fmtDate(last.created)} · ${esc(last.note || "без описания")} · .reg-файлов: ${esc(last.reg_files)}</div>`
-      : `<div class="list-title">Бэкапов пока нет</div>
-         <div class="list-sub">Создайте первый бэкап перед изменениями реестра.</div>`;
-
-    $("#dash-log").innerHTML = (data.logs && data.logs.length) ? "" : `<span class="log-empty">Журнал пуст.</span>`;
-    if (data.logs && data.logs.length) renderLogLines(data.logs, $("#dash-log"));
   }
 
   function renderAdmin(isAdmin) {
@@ -315,26 +355,12 @@
     });
   });
 
-  $("#btn-backup-now").addEventListener("click", async () => {
-    const ok = await confirmAction("Создать бэкап?", "Будут сохранены .reg-файлы всех доступных ключей, состояние твиков и список видеокарт.", "Создать");
-    if (!ok) return;
-    const res = await run("Создание бэкапа…", () => api("create_backup"));
-    if (res) {
-      toast(`Бэкап «${res.name}» создан: ${res.exported} ключей`);
-      loadDashboard();
-    }
-  });
-
   $("#btn-undo").addEventListener("click", async () => {
     const ok = await confirmAction("Отменить последнее действие?", "Последний применённый или откаченный твик вернётся в предыдущее состояние.", "Отменить действие");
     if (!ok) return;
     const res = await run("Откат…", () => api("undo_last"));
-    if (res) { toast(res.message); loadDashboard(); }
+    if (res) { toast(res.message); if (state.view === "dashboard") loadDashboard(); }
   });
-
-  $("#btn-open-logs").addEventListener("click", () => run("Открытие папки…", async () => {
-    await api("open_folder", "logs"); return true;
-  }));
 
   /* ---------- реестр ---------- */
   async function loadRegistry() {
@@ -348,6 +374,138 @@
     renderChips();
     renderTweaks();
   }
+
+  async function loadTelemetry() {
+    const data = await run("Чтение политик телеметрии…", () => api("get_telemetry_status"));
+    if (!data) return;
+    state.telemetry = data;
+    renderTelemetry(data);
+  }
+
+  function renderTelemetry(data) {
+    const controls = data.controls || [];
+    const groups = data.groups || [{ id: "windows", name: "Настройки" }];
+    const available = controls.filter((item) => item.available);
+    const minimized = available.filter((item) => item.minimized).length;
+    const managed = controls.filter((item) => item.managed).length;
+    const hasAdminManaged = controls.some((item) => item.managed && item.requires_admin);
+
+    $("#telemetry-intro").textContent = `${data.edition || "Windows"} · сборка ${data.build || "—"}. Ограничено ${minimized} из ${available.length} поддерживаемых параметров.`;
+    $("#telemetry-count").textContent = `${minimized}/${available.length}`;
+    $("#btn-telemetry-apply").disabled = !data.admin;
+    $("#btn-telemetry-apply").title = data.admin ? "Сохранит исходные значения и активирует все доступные ограничения" : "Для системных политик запустите приложение от администратора";
+    $("#btn-telemetry-restore").disabled = managed === 0 || (!data.admin && hasAdminManaged);
+    $("#btn-telemetry-restore").title = !data.admin && hasAdminManaged ? "Для восстановления системных политик нужны права администратора" : "Восстановить значения, сохранённые перед первым применением";
+
+    const renderControl = (item) => {
+      let actionLabel = "Ограничить";
+      let actionKind = "apply";
+      let disabled = !item.available || (item.requires_admin && !data.admin);
+      let stateLabel = item.state_label;
+      let stateClass = item.minimized ? "badge-ok" : "badge-muted";
+      if (item.managed) {
+        actionLabel = "Восстановить";
+        actionKind = "restore";
+        disabled = item.requires_admin && !data.admin;
+        stateLabel = "Изменено приложением · " + stateLabel;
+      } else if (!item.available) {
+        actionLabel = "Недоступно";
+        stateLabel = item.unavailable_reason || "Не поддерживается";
+      } else if (item.minimized) {
+        actionLabel = "Уже активно";
+        disabled = true;
+        stateLabel = "Ограничение активно · " + stateLabel;
+      } else if (item.requires_admin && !data.admin) {
+        actionLabel = "Нужен администратор";
+      }
+      return `
+        <article class="telemetry-row ${item.minimized ? "is-limited" : ""} ${!item.available ? "is-unavailable" : ""}">
+          <div class="telemetry-row-copy">
+            <div class="telemetry-row-heading"><h3>${esc(item.name)}</h3><span class="badge ${stateClass}">${esc(stateLabel)}</span></div>
+            <p class="muted small">${esc(item.description)}</p>
+          </div>
+          <button class="btn btn-ghost telemetry-row-action" data-telemetry-id="${esc(item.id)}" data-telemetry-action="${actionKind}" ${disabled ? "disabled" : ""}>${esc(actionLabel)}</button>
+        </article>`;
+    };
+
+    $("#telemetry-list").innerHTML = groups.map((group) => {
+      const groupControls = controls.filter((item) => item.group === group.id);
+      if (!groupControls.length) return "";
+      const groupActive = groupControls.filter((item) => item.available && item.minimized).length;
+      const groupAvailable = groupControls.filter((item) => item.available).length;
+      return `
+        <section class="telemetry-group" aria-labelledby="telemetry-group-${esc(group.id)}">
+          <div class="telemetry-group-head">
+            <h3 id="telemetry-group-${esc(group.id)}">${esc(group.name)}</h3>
+            <span class="muted small">${groupActive}/${groupAvailable} активно</span>
+          </div>
+          <div class="telemetry-group-list">${groupControls.map(renderControl).join("")}</div>
+        </section>`;
+    }).join("");
+  }
+
+  async function applyTelemetryProfile() {
+    const ok = await confirmAction(
+      "Активировать все ограничения телеметрии?",
+      "Сохранятся точные текущие значения, затем будут активированы доступные политики Windows, разрешений приложений, Microsoft Office, Edge, .NET CLI, PowerShell и установленных браузеров. Доступные задания совместимости и CEIP, а также служба диагностики DiagTrack будут отключены; это может ограничить Feedback Hub и часть средств диагностики. Ограничение доступа к камере, микрофону, местоположению и файлам влияет на соответствующие возможности приложений. Обязательные данные безопасности на обычных редакциях Windows, Defender и Windows Update останутся включены.",
+      "Активировать все",
+      true,
+    );
+    if (!ok) return;
+    const result = await run("Применение политик приватности…", () => api("apply_telemetry_profile"));
+    if (!result) return;
+    state.telemetry = result.state;
+    renderTelemetry(result.state);
+    const availableIds = new Set((result.state?.controls || []).filter((item) => item.available).map((item) => item.id));
+    const failed = (result.results || []).filter((item) => !item.ok && availableIds.has(item.id));
+    toast(failed.length
+      ? `Применено ${result.applied} из ${result.total}. ${failed[0].error}`
+      : `Профиль активирован: ${result.applied} ограничений`);
+  }
+
+  async function restoreTelemetryProfile() {
+    const ok = await confirmAction(
+      "Вернуть исходные настройки?",
+      "Будут восстановлены только значения, которые приложение сохранило перед изменением. Параметры, заданные вне приложения, не сбрасываются.",
+      "Восстановить",
+      true,
+    );
+    if (!ok) return;
+    const result = await run("Восстановление исходных политик…", () => api("restore_telemetry_profile"));
+    if (!result) return;
+    state.telemetry = result.state;
+    renderTelemetry(result.state);
+    const failed = (result.results || []).filter((item) => !item.ok);
+    toast(failed.length
+      ? `Восстановлено ${result.restored} из ${result.total}. ${failed[0].error}`
+      : `Исходные значения восстановлены: ${result.restored}`);
+  }
+
+  $("#btn-telemetry-apply").addEventListener("click", applyTelemetryProfile);
+  $("#btn-telemetry-restore").addEventListener("click", restoreTelemetryProfile);
+  $("#telemetry-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-telemetry-id]");
+    if (!button || button.disabled) return;
+    const id = button.dataset.telemetryId;
+    const control = state.telemetry?.controls?.find((item) => item.id === id);
+    if (!control) return;
+    const restoring = button.dataset.telemetryAction === "restore";
+    const ok = await confirmAction(
+      restoring ? "Восстановить настройку?" : "Ограничить сбор?",
+      restoring
+        ? `${control.name}\n\nВернётся точное значение, сохранённое перед изменением.`
+        : `${control.name}\n\n${control.description}\n\nИсходное значение будет сохранено для отката.`,
+      restoring ? "Восстановить" : "Ограничить",
+      true,
+    );
+    if (!ok) return;
+    const result = await run(restoring ? "Восстановление настройки…" : "Ограничение сбора…", () =>
+      api(restoring ? "restore_telemetry_control" : "apply_telemetry_control", id));
+    if (!result) return;
+    state.telemetry = result.state;
+    renderTelemetry(result.state);
+    toast(result.message);
+  });
 
   function renderChips() {
     $("#category-chips").innerHTML = state.categories.map((cat) => {
@@ -789,11 +947,8 @@
 
   function toolAction(tool) {
     if (tool.action === "download") {
-      const labels = { boosterx: "Скачать BoosterX", msi_utility: "Скачать MSI Utility", process_lasso: "Скачать Process Lasso" };
+      const labels = { msi_utility: "Скачать MSI Utility", process_lasso: "Скачать Process Lasso" };
       return `<button class="btn btn-sm" data-tool-download="${esc(tool.id)}">${labels[tool.id] || "Скачать файл"}</button>`;
-    }
-    if (tool.action === "download_profile") {
-      return `<button class="btn btn-sm" data-tool-download="${esc(tool.id)}">Скачать профиль</button>`;
     }
     if (tool.action === "powershell") {
       return `<button class="btn btn-sm" data-tool-debloat="${esc(tool.id)}">Запустить Debloat</button>`;
@@ -819,15 +974,6 @@
   function toolCard(tool) {
     const riskClass = tool.risk === "safe" ? "badge-ok" : tool.risk === "danger" ? "badge-danger" : "badge-warn";
     const riskText = tool.risk === "safe" ? "безопасно" : tool.risk === "danger" ? "опасно" : "осторожно";
-    let extra = "";
-    if (tool.id === "boosterx") {
-      // Show both download buttons for BoosterX
-      extra = `<button class="btn btn-ghost btn-sm" data-tool-download="boosterx_profile">Скачать профиль</button>
-               <button class="btn btn-ghost btn-sm" data-tool-profiles="1">Открыть папку профилей</button>`;
-    } else if (tool.id === "boosterx_profile") {
-      // Hide the profile tool card itself since it's shown as a button on BoosterX card
-      return "";
-    }
     return `
       <article class="tool-card">
         <div class="tool-head">
@@ -838,7 +984,7 @@
           <span class="badge ${riskClass}">${riskText}</span>
         </div>
         <p>${esc(tool.description)}</p>
-        <div class="tool-actions">${toolAction(tool)}${extra}</div>
+        <div class="tool-actions">${toolAction(tool)}</div>
         <details class="tutorial">
           <summary>Туториал: ${tool.steps.length} шагов</summary>
           <ol>${tool.steps.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
@@ -909,13 +1055,6 @@
     const downloadId = e.target.closest("[data-tool-download]")?.dataset.toolDownload;
     const openId = e.target.closest("[data-tool-open]")?.dataset.toolOpen;
     const debloat = e.target.closest("[data-tool-debloat]");
-    const profiles = e.target.closest("[data-tool-profiles]");
-
-    if (profiles) {
-      const res = await run("Открываем папку профилей…", () => api("open_profiles"));
-      if (res) toast(`Папка профилей: ${res.path}`);
-      return;
-    }
     if (downloadId) {
       const tool = state.tools.find((t) => t.id === downloadId);
       const ok = await confirmAction(
@@ -950,11 +1089,6 @@
     const res = await run("Открываем папку…", () => api("open_folder", "downloads"));
     if (res) toast(`Загрузки: ${res.path}`);
   });
-  $("#btn-open-profiles").addEventListener("click", async () => {
-    const res = await run("Открываем профили…", () => api("open_profiles"));
-    if (res) toast(`Профили: ${res.path}`);
-  });
-
   /* ---------- бэкапы ---------- */
   async function loadBackups() {
     const data = await run("Чтение списка бэкапов…", () => api("list_backups"));
@@ -1314,6 +1448,17 @@
     if (!ok) return;
     await run("Выход…", () => api("quit_app"));
   });
+  $("#btn-uninstall").addEventListener("click", async () => {
+    const ok = await confirmAction(
+      "Вы действительно хотите полностью удалить Cosmic Optimizer?",
+      "Будут удалены файл CosmicOptimizer.exe и локальные данные приложения: настройки, логи, бэкапы и снимки для отката. Это действие нельзя отменить. Уже применённые настройки Windows останутся; восстановите их перед удалением, если хотите вернуть исходное состояние.",
+      "Удалить полностью",
+      true,
+    );
+    if (!ok) return;
+    const result = await run("Планирование удаления…", () => api("uninstall_app"));
+    if (result) toast("Приложение и его локальные данные будут удалены после закрытия.");
+  });
 
   /* ---------- старт ---------- */
   /* ---------- skeleton ---------- */
@@ -1365,7 +1510,8 @@
   /* ---------- мониторинг ---------- */
   const history = { cpu: [], ram: [], gpu: [] };
   const HISTORY_LIMIT = 120; // 3 минуты при опросе раз в 1.5 сек
-  const POLL_MS = 1500;
+  const POLL_MS = 1000;
+  // 15 кадров/с выглядят плавно для графика; тяжёлые эффекты свечения уже убраны.
   const FRAME_INTERVAL = 1000 / 15;
   let monitorTimer = null;
   let monitorPaused = false;
@@ -1411,16 +1557,17 @@
       if (!valueNode || !barNode) continue;
       if (!gauge.known) {
         valueNode.textContent = "н/д";
-        barNode.style.width = "0%";
-        barNode.classList.remove("is-high");
+        barNode.style.transform = "scaleX(0)";
+      barNode.classList.remove("is-high", "is-good");
         continue;
       }
       gauge.value += (gauge.target - gauge.value) * k;
       if (Math.abs(gauge.target - gauge.value) < 0.05) gauge.value = gauge.target;
       valueNode.textContent = gauge.format(gauge.value);
       const percent = Math.max(0, Math.min(100, gauge.percent(gauge.value)));
-      barNode.style.width = `${percent}%`;
-      barNode.classList.toggle("is-high", percent >= 85);
+      barNode.style.transform = `scaleX(${percent / 100})`;
+      barNode.classList.toggle("is-high", percent >= (key === "temp" ? 80 : 85));
+      barNode.classList.toggle("is-good", percent <= (key === "temp" ? 60 : 60));
     }
 
     // масштаб графика меняется плавно, а не рывком на каждой новой точке
@@ -1452,11 +1599,11 @@
       note: `${fmtGb(data.ram_used_mb)} из ${fmtGb(data.ram_total_mb)}`,
     });
     setGauge("gpu", data.gpu, {
-      note: data.gpu_supported ? "нагрузка видеокарты" : "счётчики GPU недоступны",
+      note: data.gpu_supported ? "Windows GPU Engine · самый занятый движок" : "счётчики GPU недоступны",
     });
     setGauge("temp", data.temp, {
       format: (v) => `${Math.round(v)}°C`,
-      note: data.temp === null || data.temp === undefined ? "датчик ACPI не отвечает" : "зона ACPI",
+      note: data.temp === null || data.temp === undefined ? "датчик GPU недоступен в драйвере" : "датчик драйвера видеокарты",
     });
 
     if (el("#m-proc")) el("#m-proc").textContent = data.processes ?? "—";
@@ -1479,7 +1626,7 @@
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
     const width = Math.round(rect.width * dpr);
     const height = Math.round(rect.height * dpr);
     if (canvas.width !== width || canvas.height !== height) {
@@ -1575,10 +1722,7 @@
     ctx.strokeStyle = "rgba(255,255,255,0.95)";
     ctx.lineWidth = 1.8;
     ctx.lineJoin = "round";
-    ctx.shadowColor = "rgba(255,255,255,0.35)";
-    ctx.shadowBlur = 6;
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
     // заливка под CPU
     const lastCpu = cpuPoints[cpuPoints.length - 1];
@@ -1596,10 +1740,7 @@
     ctx.beginPath();
     ctx.arc(lastCpu[0], lastCpu[1], 2.6, 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(255,255,255,0.75)";
-    ctx.shadowBlur = 9;
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
@@ -1713,7 +1854,13 @@
     const data = await run("Определяю доступные диски…", () => api("disk_info"));
     if (!data) return;
     const select = $("#benchmark-drive");
-    select.innerHTML = (data.volumes || []).map((volume) => `<option value="${esc(volume.letter)}">${esc(volume.letter)}: ${esc(volume.label || "Локальный диск")} · свободно ${fmtBytes(volume.free)}</option>`).join("");
+    const volumeByLetter = new Map((data.volumes || []).map((volume) => [volume.letter, volume]));
+    select.innerHTML = (data.volumes || []).map((volume) => `<option value="${esc(volume.letter)}">${esc(volume.letter)}: ${esc(volume.label || "Локальный диск")} · ${esc(volume.fs || "ФС н/д")} · свободно ${fmtBytes(volume.free)} из ${fmtBytes(volume.size)}</option>`).join("");
+    select.onchange = () => {
+      const volume = volumeByLetter.get(select.value);
+      $("#benchmark-drive-info").textContent = volume ? `${volume.letter}: ${volume.label || "Локальный диск"} · ${volume.fs || "файловая система не определена"} · занято ${volume.used_percent}% · здоровье тома: ${volume.health || "нет данных"}` : "Сведения о томе недоступны.";
+    };
+    select.onchange();
     $("#btn-start-benchmark").disabled = !(data.volumes || []).length;
     if (!data.volumes?.length) select.innerHTML = '<option value="">Нет доступных дисков</option>';
   }
@@ -1726,7 +1873,13 @@
     const status = await waitJob(started.job, () => {}, 700);
     if (status.status === "error") { toast(status.error || "Тест не удалось выполнить", true); return; }
     const result = status.result || {};
-    resultNode.innerHTML = `<div class="benchmark-score">${esc(result.drive)} · полный прогон за ${esc(result.duration_seconds)} с</div><div class="benchmark-metrics"><div><small>Последовательное чтение</small><strong>${esc(result.seq_read)} МБ/с</strong></div><div><small>Последовательная запись</small><strong>${esc(result.seq_write)} МБ/с</strong></div><div><small>Случайное чтение</small><strong>${esc(result.random_read)} МБ/с</strong></div><div><small>Случайная запись</small><strong>${esc(result.random_write)} МБ/с</strong></div></div><p class="muted small">${esc(result.method || "")}</p>`;
+    const volume = result.volume || {};
+    const seqRead = Number(result.seq_read) || 0;
+    const seqWrite = Number(result.seq_write) || 0;
+    const randomRead = Number(result.random_read) || 0;
+    const randomWrite = Number(result.random_write) || 0;
+    const volumeDetails = `${result.drive} · ${volume.label || "Локальный диск"} · ${volume.fs || "ФС н/д"} · ${fmtBytes(volume.size)} · свободно ${fmtBytes(volume.free)} (${volume.used_percent ?? "н/д"}% занято)`;
+    resultNode.innerHTML = `<div class="benchmark-score">Результаты · ${esc(result.drive)} · ${esc(result.duration_seconds)} с</div><p class="muted small">${esc(volumeDetails)}</p><div class="benchmark-metrics"><div><small>Последовательное чтение · крупные файлы</small><strong>${esc(seqRead.toFixed(1))} МБ/с</strong><small>${esc((seqRead * 1.048576).toFixed(0))} МБ за 1 секунду*</small></div><div><small>Последовательная запись · крупные файлы</small><strong>${esc(seqWrite.toFixed(1))} МБ/с</strong><small>${esc((seqWrite * 1.048576).toFixed(0))} МБ за 1 секунду*</small></div><div><small>Случайное чтение · мелкие блоки</small><strong>${esc(randomRead.toFixed(1))} МБ/с</strong><small>Отклик на разрозненные операции</small></div><div><small>Случайная запись · мелкие блоки</small><strong>${esc(randomWrite.toFixed(1))} МБ/с</strong><small>Отклик на разрозненные операции</small></div></div><p class="muted small">${esc(result.method || "")}</p><p class="muted small">*Пересчёт скорости в объём за секунду, а не фактическое копирование. Результат не измеряет здоровье/износ накопителя и не гарантирует такую же скорость в играх или при копировании. Сравнивайте этот же диск при одинаковой нагрузке; разброс между прогонами нормален.</p>`;
     resultNode.classList.remove("hidden");
   });
 
@@ -2297,12 +2450,17 @@
     {
       view: "dashboard",
       title: "Обзор",
-      text: "Здесь живой мониторинг: процессор, память, видеокарта и температура обновляются каждые 1,5 секунды. Ниже — последний бэкап и журнал.",
+      text: "Сводные карточки системы наверху, мониторинг процессора, памяти, видеокарты и температуры — ниже. Опрос идёт раз в 1,5 секунды.",
     },
     {
       view: "registry",
       title: "Реестр",
       text: "25 проверенных настроек по категориям. Карточка показывает состояние, риск и кнопку «Подробнее» с ключом и значениями. Перед каждым изменением делается .reg-бэкап.",
+    },
+    {
+      view: "telemetry",
+      title: "Телеметрия",
+      text: "Одна кнопка активирует ограничения Windows, Microsoft Office, Edge и установленных браузеров. DiagTrack останавливается и отключается; тип запуска и состояние службы сохраняются для точного отката. Defender и Windows Update не отключаются.",
     },
     {
       view: "scripts",

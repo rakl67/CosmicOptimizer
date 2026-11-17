@@ -26,12 +26,19 @@
       <nav class="nav" id="nav">
         <button class="nav-item is-active" data-view="dashboard">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          <span>Обзор</span>
+          <span>Главная</span>
         </button>
-        <button class="nav-item" data-view="registry">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg>
-          <span>Реестр</span>
+        <button class="nav-item" data-view="optimization" aria-expanded="false" aria-controls="optimization-subnav">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+          <span>Оптимизация</span><span class="nav-chevron" aria-hidden="true">⌄</span>
         </button>
+        <div class="nav-subnav" id="optimization-subnav" hidden>
+          <button class="nav-subitem" data-view="power">Электропитание</button>
+          <button class="nav-subitem" data-view="telemetry">Телеметрия</button>
+          <button class="nav-subitem" data-view="registry">Реестр</button>
+          <button class="nav-subitem" data-view="scripts">Мои скрипты</button>
+          <button class="nav-subitem" data-view="tools">Инструменты</button>
+        </div>
         <button class="nav-item" data-view="devices">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
           <span>Видеокарта</span>
@@ -43,14 +50,6 @@
         <button class="nav-item" data-view="benchmark">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h17"/><path d="m7 15 4-5 3 2 5-7"/></svg>
           <span>Бенчмарк</span>
-        </button>
-        <button class="nav-item" data-view="scripts">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5M8 13l2.5 2.5L8 18"/></svg>
-          <span>Мои скрипты</span>
-        </button>
-        <button class="nav-item" data-view="tools">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3l7 7-4 4-7-7z"/><path d="M10 7L3 14v7h7l7-7"/><circle cx="7.5" cy="17.5" r="1.2"/></svg>
-          <span>Инструменты</span>
         </button>
         <button class="nav-item" data-view="backups">
           <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
@@ -76,7 +75,7 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <h1 id="section-title">Обзор</h1>
+        <h1 id="section-title">Главная</h1>
           <p id="section-sub" class="muted">Состояние системы и последние действия</p>
         </div>
         <div class="topbar-right">
@@ -100,6 +99,8 @@
       <div class="content" id="content">
         <!-- Обзор -->
         <section class="view is-active" id="view-dashboard">
+          <div class="grid grid-4" id="sys-cards"></div>
+
           <div class="monitor panel" id="monitor">
             <div class="monitor-head">
               <div>
@@ -126,12 +127,12 @@
                 <div class="gauge" data-metric="gpu">
                   <div class="gauge-top"><span>Видеокарта</span><strong id="m-gpu">—</strong></div>
                   <div class="meter"><span class="meter-fill" id="m-gpu-bar"></span></div>
-                  <div class="gauge-foot" id="m-gpu-note">—</div>
+                  <div class="gauge-foot" id="m-gpu-note">Счётчик Windows GPU Engine</div>
                 </div>
                 <div class="gauge" data-metric="temp">
-                  <div class="gauge-top"><span>Температура</span><strong id="m-temp">—</strong></div>
+                  <div class="gauge-top"><span>Температура GPU</span><strong id="m-temp">—</strong></div>
                   <div class="meter meter-temp"><span class="meter-fill" id="m-temp-bar"></span></div>
-                  <div class="gauge-foot" id="m-temp-note">—</div>
+                  <div class="gauge-foot" id="m-temp-note">Датчик драйвера видеокарты</div>
                 </div>
               </div>
               <div class="monitor-chart">
@@ -151,48 +152,12 @@
             </div>
           </div>
 
-          <div class="grid grid-4" id="sys-cards"></div>
-
-          <div class="grid grid-2 mt">
-            <div class="panel">
-              <div class="panel-head">
-                <h2>Последний бэкап</h2>
-                <button class="btn btn-ghost" data-goto="backups">Все бэкапы</button>
-              </div>
-              <div id="last-backup" class="panel-body muted">Загрузка…</div>
-              <div class="panel-actions">
-                <button class="btn" id="btn-backup-now">Создать бэкап</button>
-                <button class="btn" data-restore-point>Точка восстановления</button>
-                <button class="btn" id="btn-undo">Откатить последнее</button>
-                <button class="btn btn-ghost" id="btn-open-logs">Открыть папку логов</button>
-              </div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-head">
-                <h2>Журнал</h2>
-                <span class="muted small">последние 10 строк</span>
-              </div>
-              <pre class="log-mini" id="dash-log">Загрузка…</pre>
-            </div>
-          </div>
-
-          <div class="panel mt">
-            <div class="panel-head">
-              <h2>Быстрый старт</h2>
-            </div>
-            <div class="panel-body quick">
-              <button class="quick-btn" data-goto="registry"><span>Реестр</span><small>25 проверенных твиков по категориям</small></button>
-              <button class="quick-btn" data-goto="devices"><span>Устройства</span><small>Включение и отключение видеокарт</small></button>
-              <button class="quick-btn" data-goto="scripts"><span>Мои скрипты</span><small>Power Scheme, bcdedit, DEP</small></button>
-            </div>
-          </div>
-
           <div class="panel mt">
             <div class="panel-head"><h2>Что делает каждый раздел</h2></div>
             <div class="panel-body feature-guide">
               <button class="feature-guide-item" data-goto="dashboard"><strong>Обзор</strong><span>Показывает текущую загрузку CPU, памяти, графики и доступного датчика температуры. Это моментальный мониторинг, а не тест производительности.</span></button>
               <button class="feature-guide-item" data-goto="registry"><strong>Реестр</strong><span>Включает отдельные параметры Windows. Перед изменением сохраняется прежнее значение; у каждого пункта указаны эффект, риск и откат.</span></button>
+              <button class="feature-guide-item" data-goto="telemetry"><strong>Телеметрия</strong><span>Активирует ограничения Windows, разрешений приложений, Microsoft и браузеров одним профилем. Состояния службы и системных заданий, а также точные исходные значения сохраняются для отката.</span></button>
               <button class="feature-guide-item" data-goto="devices"><strong>Видеокарта и устройства</strong><span>Позволяет включить или отключить найденное устройство. Отключение единственной видеокарты может погасить экран.</span></button>
               <button class="feature-guide-item" data-goto="maintenance"><strong>Обслуживание</strong><span>Очищает выбранные временные данные, показывает состояние дисков, запускает проверки Windows и сравнивает замеры. Мастер помогает выбрать проверку по симптому.</span></button>
               <button class="feature-guide-item" data-goto="scripts"><strong>Мои скрипты</strong><span>Показывает исходные BAT, CMD, REG и PowerShell-файлы. Запускайте только понятные вам команды; откат доступен лишь для отмеченных скриптов.</span></button>
@@ -221,6 +186,44 @@
             </div>
           </div>
           <div class="cards" id="tweak-list"></div>
+        </section>
+
+        <!-- Телеметрия -->
+        <section class="view" id="view-power">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Схемы электропитания</h2><p class="muted small">Текущая схема Windows отмечена. Встроенные схемы нельзя удалить.</p></div><button class="btn btn-ghost" id="btn-refresh-power">Обновить</button></div>
+            <div class="panel-body" id="power-schemes"><div class="muted small">Загружаю схемы…</div></div>
+          </div>
+          <div class="banner banner-soft mt">Переключение выполняется штатной командой Windows. Удалить можно только неактивные пользовательские схемы; системные и активные схемы защищены.</div>
+        </section>
+
+        <section class="view" id="view-telemetry">
+          <div class="panel telemetry-hero">
+            <div class="telemetry-hero-main">
+              <div class="telemetry-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div>
+                <h2>Контроль телеметрии на компьютере</h2>
+                <p class="muted small" id="telemetry-intro">Считываю политики Windows и приложений…</p>
+              </div>
+            </div>
+            <div class="telemetry-summary">
+              <strong id="telemetry-count">—</strong>
+              <span class="muted small">ограничений активно</span>
+            </div>
+            <div class="telemetry-actions">
+              <button class="btn" id="btn-telemetry-apply">Активировать все</button>
+              <button class="btn btn-ghost" id="btn-telemetry-restore" disabled>Вернуть исходные значения</button>
+            </div>
+          </div>
+
+          <div class="banner banner-soft telemetry-note">
+            Профиль активирует доступные ограничения Windows, разрешений приложений, задач совместимости и CEIP, Microsoft Office, Edge, .NET CLI, PowerShell, Chrome и Firefox. Он также останавливает и отключает службу диагностики DiagTrack; исходные состояния задач и службы сохраняются для отката. Ограничения доступа приложений к камере, микрофону, местоположению и файлам могут повлиять на их работу. Необязательная телеметрия ограничивается, но обязательные данные безопасности на обычных редакциях Windows полностью не отключаются. Defender и Windows Update остаются включены.
+          </div>
+
+          <div class="telemetry-list" id="telemetry-list"></div>
+          <div class="telemetry-foot muted small" id="telemetry-foot">Перед изменением сохраняется точное исходное значение. После активации перезапустите браузеры и приложения Office; для переменных .NET CLI и PowerShell перезапустите Проводник, войдите в Windows заново или откройте новый терминал.</div>
         </section>
 
         <!-- Устройства -->
@@ -316,12 +319,13 @@
           <div class="panel">
             <div class="panel-head"><h2>Тест накопителя Windows</h2><span class="badge badge-ok">до 60 секунд</span></div>
             <div class="panel-body">
-              <p class="muted small">WinSAT выполняет четыре отдельных теста: последовательные и случайные чтение/запись. Используются фиксированные размеры операций и число запросов; пользовательские файлы не выбираются. Указанное время — общий предел теста (не более 60 секунд). Для сравнимых результатов закройте другие приложения, активно работающие с диском.</p>
+              <p class="muted small">WinSAT выполняет четыре контролируемых теста чтения и записи на выбранном томе. Он не изменяет ваши документы и не проверяет состояние/износ диска. Время — общий предел прогона (до 60 секунд); фоновые процессы, температура и кэш могут влиять на результат. Для сравнения прогоняйте диск повторно в похожих условиях.</p>
               <div class="benchmark-controls">
                 <label class="small">Диск <select class="input" id="benchmark-drive"></select></label>
                 <label class="small">Лимит времени <select class="input" id="benchmark-duration"><option value="10">до 10 секунд</option><option value="30" selected>до 30 секунд</option><option value="60">до 60 секунд</option></select></label>
                 <button class="btn" id="btn-start-benchmark">Запустить тест</button>
               </div>
+              <p id="benchmark-drive-info" class="muted small benchmark-drive-info"></p>
               <div id="benchmark-result" class="benchmark-result hidden"></div>
             </div>
           </div>
@@ -352,7 +356,6 @@
             <div class="chips" id="tool-chips"></div>
             <div class="toolbar-right">
               <button class="btn btn-ghost" id="btn-open-downloads">Папка загрузок</button>
-              <button class="btn btn-ghost" id="btn-open-profiles">Профили</button>
             </div>
           </div>
           <div class="panel mt" id="faceit-panel">
@@ -378,6 +381,7 @@
             <div class="toolbar-right">
               <button class="btn btn-ghost" id="btn-open-backups">Открыть папку</button>
               <button class="btn btn-ghost" data-restore-point>Точка восстановления</button>
+              <button class="btn btn-ghost" id="btn-undo">Откатить последнее</button>
               <button class="btn" id="btn-create-backup">Создать бэкап</button>
             </div>
           </div>
@@ -488,6 +492,10 @@
               <div class="switch-row">
                 <span><strong>Выход</strong><small class="muted">Все изменения уже сохранены в реестре</small></span>
                 <button class="btn btn-danger" id="btn-quit">Закрыть приложение</button>
+              </div>
+              <div class="switch-row uninstall-row">
+                <span><strong>Удаление</strong><small class="muted">Удалит файл программы и локальные настройки, журналы и резервные копии Cosmic Optimizer. Изменения Windows останутся.</small></span>
+                <button class="btn btn-danger" id="btn-uninstall">Удалить Cosmic Optimizer полностью</button>
               </div>
             </div>
           </div>

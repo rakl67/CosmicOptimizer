@@ -115,6 +115,22 @@ body { position: relative; }
   border-color: var(--line);
 }
 
+.nav-item .nav-chevron { margin-left: auto; font-size: 1rem; transition: transform .18s ease; }
+.nav-item[aria-expanded="true"] .nav-chevron { transform: rotate(180deg); }
+.nav-subnav { display: grid; gap: 3px; margin: 0 0 6px 25px; padding: 4px 0 4px 12px; border-left: 1px solid var(--line); }
+.nav-subnav[hidden] { display: none; }
+.nav-subitem { width: 100%; border: 0; border-radius: 8px; padding: 8px 10px; background: transparent; color: var(--muted); font: inherit; font-size: .84rem; text-align: left; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.nav-subitem:hover, .nav-subitem.is-active { color: var(--text); background: rgba(255,255,255,.06); }
+.nav-subitem.is-active { box-shadow: inset 2px 0 0 rgba(238,240,241,.72); }
+.nav-subitem:focus-visible { outline: 1px solid var(--line); outline-offset: 2px; }
+.power-scheme { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid var(--line-soft); }
+.power-scheme:last-child { border-bottom:0; }
+.power-scheme.is-active { color:var(--text); }
+.power-scheme-copy { display:grid; gap:5px; min-width:0; }
+.power-scheme-copy code { color:var(--faint); font-size:.72rem; overflow-wrap:anywhere; }
+.power-scheme-actions { display:flex; align-items:center; gap:8px; flex:none; }
+@media (max-width:620px) { .power-scheme { align-items:flex-start; flex-direction:column; } .power-scheme-actions { width:100%; flex-wrap:wrap; } }
+
 .sidebar-foot {
   margin-top: auto;
   display: flex;
@@ -172,6 +188,7 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#sys-cards { margin-bottom: 16px; }
 
 .panel {
   border: 1px solid var(--line);
@@ -1105,11 +1122,6 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .live-dot.is-live {
   background: #f5f5f5;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  animation: live-pulse 2.6s ease-in-out infinite;
-}
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
 }
 
 .monitor-body {
@@ -1134,16 +1146,18 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .meter-fill {
   display: block;
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.5), #ffffff);
-  /* шириной управляет requestAnimationFrame — CSS-переход только добавил бы лаг */
+  background: linear-gradient(90deg, #78db93, #baffc8);
+  /* Полоса масштабируется без перерасчёта ширины при обновлении. */
   transition: box-shadow 0.3s ease;
-  will-change: width;
 }
+.meter-fill.is-good { background: linear-gradient(90deg,#58c879,#a4ffb6); box-shadow:0 0 12px rgba(91,235,130,.45); }
 .meter-fill.is-high {
-  background: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+  background: linear-gradient(90deg,#ff5757,#ff9b8d);
+  box-shadow: 0 0 14px rgba(255, 71, 71, 0.55);
 }
 .meter-temp .meter-fill { background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.95)); }
 .gauge-foot { margin-top: 5px; font-size: 0.7rem; color: var(--faint); }
@@ -1151,7 +1165,7 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .monitor-chart { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 #metrics-chart {
   width: 100%;
-  height: 148px;
+  height: 132px;
   border-radius: 10px;
   border: 1px solid var(--glass-line-soft);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.32));
@@ -1324,11 +1338,13 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .benchmark-controls select.input { color-scheme: dark; }
 .benchmark-controls select.input option { color: #f2f0f7; background: #17151d; }
 .benchmark-result { margin-top: 18px; padding: 16px; border: 1px solid var(--glass-line-soft); border-radius: 14px; background: rgba(255,255,255,0.025); }
+.benchmark-drive-info { margin: 10px 0 0; line-height: 1.5; }
 .benchmark-score { margin-bottom: 12px; font-size: 1.05rem; font-weight: 650; }
 .benchmark-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
 .benchmark-metrics > div { display: flex; flex-direction: column; gap: 5px; padding: 12px; border: 1px solid var(--glass-line-soft); border-radius: 11px; }
 .benchmark-metrics small { color: var(--muted); }
 .benchmark-metrics strong { font-size: 1.05rem; }
+.benchmark-metrics > div > small:last-child { line-height: 1.45; }
 #view-backups > .banner-soft { margin-top: 18px; }
 .modal-remember { display: flex; align-items: center; gap: 8px; margin: 14px 0 2px; color: var(--muted); font-size: 0.76rem; cursor: pointer; }
 .modal-remember input { accent-color: #b9a7ff; }
@@ -1435,6 +1451,67 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.82em; col
 .profile-state-row.is-off .profile-state-dot { background: #d87979; box-shadow: 0 0 7px rgba(216,121,121,0.18); }
 .modal-box, .loading-card, .job-progress { box-shadow: 0 20px 48px -28px rgba(0,0,0,0.96), inset 0 1px 0 rgba(255,255,255,0.07); }
 .toast.error { border-left-color: #d87979; color: #edb9b9; }
+
+/* ---------- Телеметрия ---------- */
+.telemetry-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px 24px;
+  padding: 22px;
+  background: linear-gradient(120deg, rgba(112, 155, 132, 0.13), rgba(255,255,255,0.035) 58%);
+}
+.telemetry-hero-main { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.telemetry-hero-main h2 { margin: 0 0 5px; font-size: 1.04rem; font-weight: 620; }
+.telemetry-hero-main p { margin: 0; }
+.telemetry-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid rgba(133, 190, 153, 0.28);
+  border-radius: 13px;
+  color: #b8dfc4;
+  background: rgba(67, 124, 85, 0.14);
+}
+.telemetry-mark svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.telemetry-summary { display: flex; align-items: baseline; gap: 9px; white-space: nowrap; }
+.telemetry-summary strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+.telemetry-actions { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.telemetry-note { margin: 14px 0; line-height: 1.55; }
+.telemetry-list { display: grid; gap: 18px; }
+.telemetry-group { display: grid; gap: 9px; }
+.telemetry-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 3px; }
+.telemetry-group-head h3 { margin: 0; font-size: .78rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.telemetry-group-list { display: grid; gap: 9px; }
+.telemetry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 17px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.telemetry-row.is-limited { border-color: rgba(113,196,143,0.22); background: rgba(45,102,66,0.075); }
+.telemetry-row.is-unavailable { opacity: .62; }
+.telemetry-row-copy { min-width: 0; }
+.telemetry-row-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+.telemetry-row h3 { margin: 0; font-size: .9rem; font-weight: 600; }
+.telemetry-row p { margin: 7px 0 0; max-width: 780px; line-height: 1.5; }
+.telemetry-row-action { flex: none; min-width: 138px; }
+.telemetry-row-action:disabled { opacity: .58; cursor: not-allowed; transform: none; }
+.telemetry-foot { padding: 13px 2px 0; }
+@media (max-width: 760px) {
+  .telemetry-hero { grid-template-columns: minmax(0,1fr); gap: 14px; padding: 17px; }
+  .telemetry-summary { padding-left: 58px; }
+  .telemetry-actions { grid-column: auto; }
+  .telemetry-row { align-items: flex-start; flex-direction: column; }
+  .telemetry-row-action { width: 100%; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }

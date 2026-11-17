@@ -26,10 +26,11 @@ QUOTE_RE = re.compile(r"«[^»]*(?:→|реестр)[^»]*»")
 VIEWS = [
     {"id": "dashboard", "title": "Обзор", "subtitle": "Мониторинг, бэкап и журнал"},
     {"id": "registry", "title": "Реестр", "subtitle": "25 твиков по категориям"},
+    {"id": "telemetry", "title": "Телеметрия", "subtitle": "Диагностические данные Windows, рекламный ID и персонализация"},
     {"id": "devices", "title": "Видеокарта и устройства", "subtitle": "Включение и отключение PnP"},
     {"id": "maintenance", "title": "Обслуживание", "subtitle": "Мастер диагностики, очистка, диски и проверки"},
     {"id": "scripts", "title": "Мои скрипты", "subtitle": "Материалы из исходной папки"},
-    {"id": "tools", "title": "Инструменты", "subtitle": "BoosterX, Process Lasso, MSI, Debloat"},
+    {"id": "tools", "title": "Инструменты", "subtitle": "Process Lasso, MSI, Debloat"},
     {"id": "backups", "title": "Бэкапы", "subtitle": "Точки отката и переносимый профиль настроек"},
     {"id": "logs", "title": "Логи", "subtitle": "Журнал действий"},
     {"id": "settings", "title": "Настройки", "subtitle": "Подтверждения и данные"},

@@ -19,6 +19,10 @@ def run(duration: int, drive: str, job: dict) -> dict:
     drive = str(drive or "").strip().upper().rstrip(":\\")
     if len(drive) != 1 or not drive.isalpha():
         raise ValueError("Выберите доступный диск")
+    from .maintenance import disk_info
+    volume = next((item for item in disk_info()["volumes"] if item["letter"].upper() == drive), None)
+    if not volume:
+        raise RuntimeError(f"Диск {drive}: больше не доступен. Обновите список дисков.")
     tests = [("seq_read", "-seq", "-read", "Последовательное чтение"),
              ("seq_write", "-seq", "-write", "Последовательная запись"),
              ("random_read", "-ran", "-read", "Случайное чтение"),
@@ -26,9 +30,6 @@ def run(duration: int, drive: str, job: dict) -> dict:
     started = time.monotonic()
     results = {}
     for index, (key, pattern, direction, label) in enumerate(tests, 1):
-        remaining = duration - (time.monotonic() - started)
-        if remaining <= 0:
-            raise TimeoutError("Лимит времени теста исчерпан; запустите более длительный прогон")
         jobs.update_progress(job, (index - 1) * 25, label)
         # Единые параметры делают повторные запуски сопоставимыми.
         # На каждый этап ограничиваем нагрузку 512 операциями.
@@ -37,9 +38,9 @@ def run(duration: int, drive: str, job: dict) -> dict:
         command = ["winsat.exe", "disk", pattern, direction, "-drive", drive,
                    "-count", "1", "-iocount", "512", block, block_size, "-v"]
         try:
-            proc = subprocess.run(command, capture_output=True, timeout=max(1, remaining), creationflags=CREATE_NO_WINDOW)
+            proc = subprocess.run(command, capture_output=True, timeout=duration + 15, creationflags=CREATE_NO_WINDOW)
         except subprocess.TimeoutExpired as exc:
-            raise TimeoutError(f"Тест «{label}» остановлен по лимиту {duration} секунд") from exc
+            raise TimeoutError(f"Этап «{label}» не завершился за {duration + 15} секунд с учётом запуска WinSAT") from exc
         output = (proc.stdout or b"").decode("mbcs", errors="replace") + "\n" + (proc.stderr or b"").decode("mbcs", errors="replace")
         if proc.returncode != 0:
             raise RuntimeError(f"WinSAT не выполнил тест «{label}»: {output[-600:].strip() or f'код {proc.returncode}'}")
@@ -53,5 +54,6 @@ def run(duration: int, drive: str, job: dict) -> dict:
         **results,
         "duration_seconds": round(elapsed, 1),
         "drive": f"{drive}:",
-        "method": "WinSAT · 1 МиБ последовательные блоки, 16 КиБ случайные блоки, 512 операций на режим. Сравнивайте прогоны на одном ПК при одинаковых условиях.",
+        "volume": volume,
+        "method": "WinSAT, стандартный тест Windows: 1 МиБ блоки для последовательного доступа, 16 КиБ для случайного, по 512 операций каждого вида. Это короткий синтетический тест, а не скорость копирования файлов; фоновые задачи и кэш влияют на результат.",
     }

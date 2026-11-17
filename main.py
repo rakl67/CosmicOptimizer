@@ -27,10 +27,12 @@ from backend import (
     maintenance,
     measure,
     monitor,
+    power,
     registry,
     portable_profile,
     scripts,
     search,
+    telemetry,
     tools,
 )
 from backend.config import logger
@@ -147,6 +149,26 @@ class Api:
             "tweaks": [_tweak_payload(tweak) for tweak in TWEAKS],
             "admin": admin.is_admin(),
         }
+
+    @api_method
+    def get_telemetry_status(self) -> dict:
+        return telemetry.status()
+
+    @api_method
+    def apply_telemetry_control(self, control_id: str) -> dict:
+        return telemetry.apply_control(control_id)
+
+    @api_method
+    def restore_telemetry_control(self, control_id: str) -> dict:
+        return telemetry.restore_control(control_id)
+
+    @api_method
+    def apply_telemetry_profile(self) -> dict:
+        return telemetry.apply_profile()
+
+    @api_method
+    def restore_telemetry_profile(self) -> dict:
+        return telemetry.restore_profile()
 
     @api_method
     def apply_tweak(self, tweak_id: str) -> dict:
@@ -298,7 +320,6 @@ class Api:
         return {
             "tools": tools.tools_catalog(),
             "downloads": str(tools.DOWNLOAD_DIR),
-            "profiles": str(tools.PROFILES_DIR),
             "gpu": tools.gpu_vendor(),
             "admin": admin.is_admin(),
         }
@@ -314,10 +335,6 @@ class Api:
     @api_method
     def run_debloat(self) -> dict:
         return tools.run_debloat()
-
-    @api_method
-    def open_profiles(self) -> dict:
-        return tools.open_profiles()
 
     @api_method
     def get_metrics(self) -> dict:
@@ -369,6 +386,18 @@ class Api:
             raise RuntimeError("SSD не обнаружен — TRIM не требуется")
         job = jobs.start_process("TRIM системного диска", maintenance.trim_args(), timeout=1800)
         return {"job": job["id"], "title": job["title"]}
+
+    @api_method
+    def power_schemes(self) -> dict:
+        return power.list_schemes()
+
+    @api_method
+    def activate_power_scheme(self, guid: str) -> dict:
+        return power.activate(guid)
+
+    @api_method
+    def delete_power_scheme(self, guid: str) -> dict:
+        return power.delete(guid)
 
     @api_method
     def start_benchmark(self, duration: int, drive: str) -> dict:
@@ -615,7 +644,6 @@ class Api:
             "data": config.DATA_DIR,
             "scripts": config.SCRIPTS_DIR,
             "downloads": tools.DOWNLOAD_DIR,
-            "profiles": tools.PROFILES_DIR,
         }
         path = paths.get(kind)
         if path is None:
@@ -634,6 +662,30 @@ class Api:
         if self._window is not None:
             self._window.destroy()
         return {"message": "Выход"}
+
+    @api_method
+    def uninstall_app(self) -> dict:
+        if not config.FROZEN:
+            raise RuntimeError("Полное удаление доступно только в собранной версии приложения")
+        executable = Path(sys.executable).resolve()
+        data_dir = config.DATA_DIR.resolve()
+        if executable.name.casefold() != "cosmicoptimizer.exe" or executable.parent.name.casefold() != "dist":
+            raise RuntimeError("Не удалось безопасно определить файл приложения для удаления")
+        if data_dir.name.casefold() != "cosmicoptimizer":
+            raise RuntimeError("Не удалось безопасно определить папку данных приложения")
+        script = Path(os.environ.get("TEMP", str(Path.home()))) / f"cosmic-uninstall-{os.getpid()}.cmd"
+        script.write_text(
+            "@echo off\r\n"
+            "ping 127.0.0.1 -n 4 >nul\r\n"
+            f'del /f /q "{executable}"\r\n'
+            f'rmdir /s /q "{data_dir}"\r\n'
+            f'del /f /q "%~f0"\r\n',
+            encoding="ascii",
+        )
+        subprocess.Popen(["cmd.exe", "/c", str(script)], cwd=str(script.parent), creationflags=0x08000000 | subprocess.DETACHED_PROCESS)
+        if self._window is not None:
+            self._window.destroy()
+        return {"scheduled": True}
 
 
 def _fatal(message: str) -> None:

@@ -61,6 +61,20 @@ def _thumbnail_files() -> list[Path]:
     return [item for item in explorer.glob("thumbcache_*.db") if item.is_file()]
 
 
+def _shader_caches() -> list[Path]:
+    local = _env("LOCALAPPDATA")
+    if not local:
+        return []
+    candidates = [
+        local / "D3DSCache",
+        local / "NVIDIA" / "DXCache",
+        local / "NVIDIA" / "GLCache",
+        local / "AMD" / "DxCache",
+        local / "AMD" / "GLCache",
+    ]
+    return [path for path in candidates if path.is_dir()]
+
+
 def _browser_caches() -> dict[str, Path]:
     found: dict[str, Path] = {}
     for label, (env_key, relative) in BROWSERS.items():
@@ -94,6 +108,21 @@ def _windows_old() -> Path | None:
     drive = os.environ.get("SystemDrive", "C:")
     path = Path(f"{drive}\\Windows.old")
     return path if path.is_dir() else None
+
+
+def _managed_cache_roots(category: str) -> list[Path]:
+    """Return narrow, documented Windows cache/log locations for optional cleanup."""
+    system = Path(os.environ.get("SystemRoot", r"C:\Windows"))
+    program_data = _env("ProgramData") or Path(os.environ.get("SystemDrive", "C:")) / "ProgramData"
+    roots = {
+        # Delivery Optimization cache is reproducible; Windows can download it again.
+        "delivery_optimization": [program_data / "Microsoft" / "Windows" / "DeliveryOptimization" / "Cache"],
+        # Only archived reports, never active queue or the diagnostic database.
+        "wer_archive": [program_data / "Microsoft" / "Windows" / "WER" / "ReportArchive"],
+        # Setup logs are useful for troubleshooting, but are not required after setup.
+        "setup_logs": [system / "Panther", system / "Panther" / "UnattendGC"],
+    }
+    return [path for path in roots.get(category, []) if path.is_dir()]
 
 
 WALK_WORKERS = 6  # подпапки считаем параллельно: на SSD скан быстрее в разы
@@ -176,6 +205,41 @@ def targets() -> list[dict]:
             "risk": "safe",
         },
         {
+            "id": "shader_cache",
+            "name": "Кэш шейдеров видеокарты",
+            "description": "Временные кэши DirectX и драйверов NVIDIA/AMD. Игры и драйверы создадут их заново; первый запуск игры после очистки может быть дольше.",
+            "kind": "files",
+            "risk": "safe",
+        },
+        {
+            "id": "crash_dumps",
+            "name": "Отчёты об аварийных сбоях приложений",
+            "description": "Старые локальные дампы сбоев из пользовательских и Windows Temp. Не затрагивает сохранения, документы, браузерные данные и входы в аккаунты.",
+            "kind": "files",
+            "risk": "safe",
+        },
+        {
+            "id": "delivery_optimization",
+            "name": "Кэш оптимизации доставки Windows",
+            "description": "Удаляет только кэш P2P-доставки обновлений. Windows загрузит нужные файлы повторно; очередь и установленные обновления не затрагиваются.",
+            "kind": "files",
+            "risk": "safe",
+        },
+        {
+            "id": "wer_archive",
+            "name": "Архив старых отчётов об ошибках Windows",
+            "description": "Удаляет только архивированные отчёты WER. Активную очередь отправки и базу диагностики не затрагивает; старые отчёты для анализа сбоев будут потеряны.",
+            "kind": "files",
+            "risk": "caution",
+        },
+        {
+            "id": "setup_logs",
+            "name": "Журналы установки Windows",
+            "description": "Старые логи Panther после установки/обновления Windows. Их удаление освобождает место, но лишает диагностических записей установки.",
+            "kind": "files",
+            "risk": "caution",
+        },
+        {
             "id": "browsers",
             "name": "Кэш браузеров",
             "description": "Только папки Cache у Edge, Chrome, Яндекса, Brave, Opera и Vivaldi. Пароли и закладки не трогаются.",
@@ -231,6 +295,22 @@ def _scan_one(item: dict, temp_roots: list[Path]) -> dict:
             cache = _thumbnail_files()
             size = sum(f.stat().st_size for f in cache if f.exists())
             files = len(cache)
+        elif item["id"] == "shader_cache":
+            size = files = 0
+            for cache in _shader_caches():
+                part, count = _dir_size(cache)
+                size += part
+                files += count
+        elif item["id"] == "crash_dumps":
+            dumps = [file for root in _temp_roots() for file in root.rglob("*.dmp") if file.is_file()]
+            size = sum(file.stat().st_size for file in dumps if file.exists())
+            files = len(dumps)
+        elif item["id"] in {"delivery_optimization", "wer_archive", "setup_logs"}:
+            size = files = 0
+            for root in _managed_cache_roots(item["id"]):
+                part, count = _dir_size(root)
+                size += part
+                files += count
         elif item["id"] == "browsers":
             size = 0
             files = 0
@@ -383,6 +463,28 @@ def clean(ids: list[str], job: dict | None = None) -> dict:
                         freed += size
                     except OSError:
                         errors += 1
+            elif item_id == "shader_cache":
+                for cache in _shader_caches():
+                    part, err = _clear_dir(cache)
+                    freed += part
+                    errors += err
+            elif item_id == "crash_dumps":
+                for root in _temp_roots():
+                    try:
+                        candidates = root.rglob("*.dmp")
+                        for dump in candidates:
+                            if _skip(dump):
+                                continue
+                            part, err = _remove_entry(dump, False)
+                            freed += part
+                            errors += err
+                    except OSError:
+                        errors += 1
+            elif item_id in {"delivery_optimization", "wer_archive", "setup_logs"}:
+                for root in _managed_cache_roots(item_id):
+                    part, err = _clear_dir(root)
+                    freed += part
+                    errors += err
             elif item_id == "browsers":
                 for cache in _browser_caches().values():
                     part, err = _clear_dir(cache)

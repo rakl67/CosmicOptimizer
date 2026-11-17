@@ -16,53 +16,10 @@ from .config import logger
 
 CREATE_NEW_CONSOLE = 0x00000010
 DOWNLOAD_DIR = config.DATA_DIR / "downloads"
-PROFILES_DIR = config.DATA_DIR / "profiles"
 GPU_CLASS = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
 DEBLOAT_COMMAND = '& ([scriptblock]::Create((irm "https://debloat.raphi.re/")))'
 
 TOOLS = [
-    {
-        "id": "boosterx",
-        "group": "games",
-        "title": "BoosterX",
-        "tagline": "Оптимизация Windows под игры в один клик",
-        "description": "Скачивается установщик. Внутри — профили оптимизации Windows, отключение фоновых "
-                       "служб и настройка питания. Работает локально после установки.",
-        "url": "https://github.com/BoosterX/BoosterX/releases/latest/download/BoosterX.exe",
-        "fallback_urls": [
-            "https://boosterx.org/download/BoosterX.exe",
-            "https://dl.boosterx.org/BoosterX.exe"
-        ],
-        "action": "download",
-        "filename": "BoosterX.exe",
-        "steps": [
-            "Нажмите «Скачать BoosterX» — файл сохранится в папку загрузок приложения.",
-            "Запустите BoosterX.exe и установите программу.",
-            "Откройте BoosterX → раздел профилей (Profiles).",
-            "Нажмите «Профиль» в этом приложении — откроется папка, куда положить файл профиля.",
-            "В BoosterX выберите «Импорт профиля» и укажите файл из этой папки.",
-            "Проверьте список изменений, нажмите «Применить» и перезагрузите ПК.",
-        ],
-        "risk": "caution",
-    },
-    {
-        "id": "boosterx_profile",
-        "group": "games",
-        "title": "BoosterX — Пак оптимизаций",
-        "tagline": "Профиль настроек для BoosterX (BackUp_0.buxz)",
-        "description": "Готовый профиль оптимизации Windows для BoosterX. Скачается в папку профилей приложения. "
-                       "В BoosterX: Профили → Импорт → выберите этот файл → Применить.",
-        "url": "assets/BackUp_0.buxz",
-        "action": "download_profile",
-        "filename": "BackUp_0.buxz",
-        "steps": [
-            "Нажмите «Скачать профиль» — файл сохранится в папку профилей приложения.",
-            "Откройте BoosterX → раздел Профили (Profiles).",
-            "Нажмите «Импорт профиля» и выберите BackUp_0.buxz из папки профилей.",
-            "Проверьте список изменений, нажмите «Применить» и перезагрузите ПК.",
-        ],
-        "risk": "safe",
-    },
     {
         "id": "process_lasso",
         "group": "games",
@@ -226,32 +183,6 @@ def download_tool(tool_id: str) -> dict:
         webbrowser.open(tool["url"])
         return {"opened": True, "url": tool["url"], "message": "Страница открыта в браузере"}
 
-    if tool["action"] == "download_profile":
-        # Копируем встроенный профиль в пользовательскую папку профилей.
-        profiles_dir = PROFILES_DIR
-        profiles_dir.mkdir(parents=True, exist_ok=True)
-        target = profiles_dir / tool["filename"]
-        
-        # При сборке файл берётся из архива EXE, при разработке — из assets/.
-        if config.FROZEN:
-            import sys
-            src = Path(sys._MEIPASS) / "assets" / tool["filename"]
-        else:
-            src = config.ROOT_DIR / "assets" / tool["filename"]
-        
-        if not src.exists():
-            raise RuntimeError(f"Файл профиля не найден в сборке: {src}")
-        
-        if target.exists() and target.stat().st_size == src.stat().st_size:
-            os.startfile(str(profiles_dir))  # noqa: S606
-            return {"path": str(target), "cached": True, "message": "Профиль уже есть"}
-        
-        import shutil
-        shutil.copy2(src, target)
-        logger.info("Профиль скопирован: %s → %s", src, target)
-        os.startfile(str(profiles_dir))  # noqa: S606
-        return {"path": str(target), "cached": False, "message": f"Профиль готов: {target.name}"}
-
     folder = _ensure_downloads()
     target = folder / (tool["filename"] or "download.exe")
     if target.exists() and target.stat().st_size > 1024:
@@ -305,27 +236,6 @@ def run_debloat() -> dict:
         "pid": process.pid,
         "message": "Окно PowerShell открыто. Выберите базовую настройку и подтвердите.",
     }
-
-
-def profiles_dir() -> Path:
-    PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    return PROFILES_DIR
-
-
-def open_profiles() -> dict:
-    path = profiles_dir()
-    try:
-        readme = path / "Как-положить-профиль.txt"
-        if not readme.exists():
-            readme.write_text(
-                "Положите сюда файл профиля BoosterX (.bxprofile или .json).\n"
-                "Затем откройте BoosterX → Профили → Импорт и выберите этот файл.\n",
-                encoding="utf-8",
-            )
-    except OSError:
-        pass
-    os.startfile(str(path))  # noqa: S606
-    return {"path": str(path), "files": [p.name for p in path.iterdir() if p.is_file()]}
 
 
 def gpu_vendor() -> dict:

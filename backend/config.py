@@ -11,7 +11,7 @@ from pathlib import Path
 
 APP_NAME = "Cosmic Optimizer"
 APP_DIR_NAME = "CosmicOptimizer"
-VERSION = "1.0.0"
+VERSION = "1.0.2"
 AUTHOR = "rakl679"
 
 FROZEN = bool(getattr(sys, "frozen", False))
